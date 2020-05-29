@@ -1,0 +1,8 @@
+healthchecks:
+  - name: "Google"
+    url: "https://google.com"
+    interval: "* * * * *"
+    timeout: 400
+    notifiers:
+      - to: info@example.com
+        type: sendgrid
