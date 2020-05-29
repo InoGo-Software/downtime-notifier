@@ -4,10 +4,12 @@
 
 # Setup
 
+1. `git clone git@github.com:InoGo-Software/downtime-notifier.git`
+1. `cp config.example.yaml config.yaml`
 1. Write your config in `config.yaml`
 1. Run & build
     1. with go: `go build . && ./downtime-notifier`
-    1. with docker: `docker build -t downtime-notifier . && docker run -e SENDGRID_API_KEY=xxx downtime-notifier`
+    1. with docker: `docker build -t downtime-notifier . && docker run -e SENDGRID_API_KEY= downtime-notifier`
 
 # Config
 
