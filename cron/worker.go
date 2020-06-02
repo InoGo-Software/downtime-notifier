@@ -16,9 +16,15 @@ func work(healthCheck healthcheck.HealthCheck) {
 	// Perform the GET request.
 	resp, err := client.Get(healthCheck.Url)
 	if err != nil || resp.StatusCode != 200 {
-		log.Printf("Failed to make successful GET request to %s", healthCheck.Url)
-		healthCheck.Notify()
-		return
+		log.Printf("Failed to make successful GET request to %s, retrying", healthCheck.Url)
+
+
+	    resp, err := client.Get(healthCheck.Url)
+	    if err != nil || resp.StatusCode != 200 {
+		    log.Printf("Failed to make second GET request to %s", healthCheck.Url)
+		    healthCheck.Notify()
+		    return
+        }
 	}
 
 	// Print result.
