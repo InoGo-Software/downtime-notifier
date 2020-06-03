@@ -2,31 +2,51 @@ package cron
 
 import (
 	"github.com/InoGo-Software/downtime-notifier/healthcheck"
+	"github.com/InoGo-Software/downtime-notifier/services"
 	"log"
-	"net/http"
 	"time"
 )
 
+const delayForNextCall = 5 * time.Second
+
+func isHealthCheckPassing(healthCheck *healthcheck.HealthCheck, isUnhealthy bool) bool {
+	// Make the first request.
+	if healthCheck.PerformRequest() {
+		services.FileSystemService.Save(healthCheck.Name, false)
+
+		if isUnhealthy {
+			healthCheck.Notify(true)
+		}
+
+		log.Printf("[%s]: request to %s was successful", healthCheck.Name, healthCheck.Url)
+		return true
+	}
+	log.Printf("[%s]: Failed to make successful GET request to %s", healthCheck.Name, healthCheck.Url)
+	return false
+}
+
 func work(healthCheck healthcheck.HealthCheck) {
-	// Initialize client.
-	client := http.Client{
-		Timeout: time.Duration(healthCheck.Timeout) * time.Millisecond,
+	isUnhealthy := services.FileSystemService.IsFailing(healthCheck.Name)
+
+	if isHealthCheckPassing(&healthCheck, isUnhealthy) {
+		return
 	}
 
-	// Perform the GET request.
-	resp, err := client.Get(healthCheck.Url)
-	if err != nil || resp.StatusCode != 200 {
-		log.Printf("Failed to make successful GET request to %s, retrying", healthCheck.Url)
+	// Delay before making next call.
+	time.Sleep(delayForNextCall)
 
-
-	    resp, err := client.Get(healthCheck.Url)
-	    if err != nil || resp.StatusCode != 200 {
-		    log.Printf("Failed to make second GET request to %s", healthCheck.Url)
-		    healthCheck.Notify()
-		    return
-        }
+	if isHealthCheckPassing(&healthCheck, isUnhealthy) {
+		return
 	}
 
-	// Print result.
-	log.Printf("[%s]: %s returned %d\n", healthCheck.Name, healthCheck.Url, resp.StatusCode)
+	// Check if the service was already failing.
+	if isUnhealthy {
+		log.Printf("[%s]: Already in failing state. Skipping notify", healthCheck.Name)
+		return
+	}
+
+	healthCheck.Notify(false)
+
+	// Save the failing state.
+	services.FileSystemService.Save(healthCheck.Name, true)
 }
